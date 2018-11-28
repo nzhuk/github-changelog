@@ -135,7 +135,7 @@ def extract_pr(message):
     raise Exception("Commit isn't a PR merge, {}".format(message))
 
 
-def fetch_changes(github_config, owner, repo, branch, previous_tag=None, current_tag=None):
+def fetch_changes(github_config, owner, repo, branch, previous_tag, current_tag=None):
     previous_commit = get_commit_for_tag(github_config, owner, repo,
                                          previous_tag)
 
