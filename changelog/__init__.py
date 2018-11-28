@@ -62,6 +62,10 @@ def get_commit_for_tag(github_config, owner, repo, tag):
                 tag, tag_json['message']))
 
         # If we're given a tag object we have to look up the commit
+        if type(tag_json) is list:
+            raise GitHubError("Unable to get tag '{}'. Potentially matching tags: {}".format(
+                tag, list(map(lambda x: x['ref'].split("/")[-1], tag_json))))
+
         if tag_json['object']['type'] == 'tag':
             tag_url = tag_json['object']['url']
 
