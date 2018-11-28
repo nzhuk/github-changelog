@@ -72,7 +72,7 @@ def get_commit_for_tag(github_config, owner, repo, tag):
     return tag_json['object']['sha']
 
 
-def get_last_commit(github_config, owner, repo, branch='master'):
+def get_last_commit(github_config, owner, repo, branch):
     """ Get the last commit sha for the given repo and branch """
     commits_url = '/'.join([
         github_config.api_url,
@@ -80,7 +80,7 @@ def get_last_commit(github_config, owner, repo, branch='master'):
         owner, repo,
         'commits'
     ])
-    commits_response = requests.get(commits_url, params={'sha': 'master'},
+    commits_response = requests.get(commits_url, params={'sha': branch},
                                     headers=github_config.headers)
     commits_json = commits_response.json()
     if commits_response.status_code != 200:
@@ -90,7 +90,7 @@ def get_last_commit(github_config, owner, repo, branch='master'):
     return commits_json[0]['sha']
 
 
-def get_commits_between(github_config, owner, repo, first_commit, last_commit):
+def get_commits_between(github_config, owner, repo, branch, first_commit, last_commit):
     """ Get a list of commits between two commits """
     commits_url = '/'.join([
         github_config.api_url,
@@ -99,7 +99,7 @@ def get_commits_between(github_config, owner, repo, first_commit, last_commit):
         'compare',
         first_commit + '...' + last_commit
     ])
-    commits_response = requests.get(commits_url, params={'sha': 'master'},
+    commits_response = requests.get(commits_url, params={'sha': branch},
                                     headers=github_config.headers)
     commits_json = commits_response.json()
     if commits_response.status_code != 200:
@@ -135,8 +135,7 @@ def extract_pr(message):
     raise Exception("Commit isn't a PR merge, {}".format(message))
 
 
-def fetch_changes(github_config, owner, repo, previous_tag=None,
-                  current_tag=None, branch='master'):
+def fetch_changes(github_config, owner, repo, branch, previous_tag=None, current_tag=None):
     previous_commit = get_commit_for_tag(github_config, owner, repo,
                                          previous_tag)
 
@@ -147,7 +146,7 @@ def fetch_changes(github_config, owner, repo, previous_tag=None,
     else:
         current_commit = get_last_commit(github_config, owner, repo, branch)
 
-    commits_between = get_commits_between(github_config, owner, repo,
+    commits_between = get_commits_between(github_config, owner, repo, branch,
                                           previous_commit, current_commit)
 
     # Process the commit list looking for PR merges
@@ -178,14 +177,14 @@ def format_changes(github_config, owner, repo, prs, markdown=False):
     return lines
 
 
-def generate_changelog(owner, repo, previous_tag, current_tag=None,
+def generate_changelog(owner, repo, branch, previous_tag, current_tag=None,
                        markdown=False, single_line=False, github_base_url=None,
                        github_api_url=None, github_token=None):
 
     github_config = get_github_config(github_base_url, github_api_url,
                                       github_token)
 
-    prs = fetch_changes(github_config, owner, repo, previous_tag, current_tag)
+    prs = fetch_changes(github_config, owner, repo, branch, previous_tag, current_tag)
     lines = format_changes(github_config, owner, repo, prs, markdown=markdown)
 
     separator = '\\n' if single_line else '\n'
@@ -200,6 +199,8 @@ def main():
                         help='owner of the repo on GitHub')
     parser.add_argument('repo', metavar='REPO',
                         help='name of the repo on GitHub')
+    parser.add_argument('branch', metavar='BRANCH',
+                        help='name of the target branch where Pull Requests have been merged')
     parser.add_argument('previous_tag', metavar='PREVIOUS',
                         help='previous release tag')
     parser.add_argument('current_tag', metavar='CURRENT', nargs='?',
