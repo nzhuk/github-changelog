@@ -86,15 +86,6 @@ def get_last_commit(github_config, owner, repo, branch='master'):
     return commits_json[0]['sha']
 
 
-def get_last_tag(github_config, owner, repo):
-    """ Get the last tag for the given repo """
-    tags_url = '/'.join([github_config.api_url, 'repos', owner, repo, 'tags'])
-    tags_response = requests.get(tags_url, headers=github_config.headers)
-    tags_response.raise_for_status()
-    tags_json = tags_response.json()
-    return tags_json[0]['name']
-
-
 def get_commits_between(github_config, owner, repo, first_commit, last_commit):
     """ Get a list of commits between two commits """
     commits_url = '/'.join([
@@ -142,8 +133,6 @@ def extract_pr(message):
 
 def fetch_changes(github_config, owner, repo, previous_tag=None,
                   current_tag=None, branch='master'):
-    if previous_tag is None:
-        previous_tag = get_last_tag(github_config, owner, repo)
     previous_commit = get_commit_for_tag(github_config, owner, repo,
                                          previous_tag)
 
@@ -185,7 +174,7 @@ def format_changes(github_config, owner, repo, prs, markdown=False):
     return lines
 
 
-def generate_changelog(owner, repo, previous_tag=None, current_tag=None,
+def generate_changelog(owner, repo, previous_tag, current_tag=None,
                        markdown=False, single_line=False, github_base_url=None,
                        github_api_url=None, github_token=None):
 
@@ -207,8 +196,8 @@ def main():
                         help='owner of the repo on GitHub')
     parser.add_argument('repo', metavar='REPO',
                         help='name of the repo on GitHub')
-    parser.add_argument('previous_tag', metavar='PREVIOUS', nargs='?',
-                        help='previous release tag (defaults to last tag)')
+    parser.add_argument('previous_tag', metavar='PREVIOUS',
+                        help='previous release tag')
     parser.add_argument('current_tag', metavar='CURRENT', nargs='?',
                         help='current release tag (defaults to HEAD)')
     parser.add_argument('-m', '--markdown', action='store_true',
